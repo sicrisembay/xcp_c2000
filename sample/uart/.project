@@ -25,4 +25,16 @@
 		<nature>org.eclipse.cdt.core.ccnature</nature>
 		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>driver</name>
+			<type>2</type>
+			<locationURI>PARENT-2-PROJECT_LOC/driver</locationURI>
+		</link>
+		<link>
+			<name>xcpBasicDriver</name>
+			<type>2</type>
+			<locationURI>PARENT-2-PROJECT_LOC/xcpBasicDriver</locationURI>
+		</link>
+	</linkedResources>
 </projectDescription>

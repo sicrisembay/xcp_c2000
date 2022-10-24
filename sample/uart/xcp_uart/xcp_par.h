@@ -1,18 +1,7 @@
-/*----------------------------------------------------------------------------
-| Project: XCP_Delivery
-|
-|  Description:   Implementation of the XCP Protocol Layer
-|                 XCP V1.0 slave device driver
-|                 Basic Version
-|
-|-----------------------------------------------------------------------------
-| Copyright (c) by Vector Informatik GmbH.  All rights reserved.
-----------------------------------------------------------------------------*/
-#if defined ( __XCP_PAR_H__ )
-#else
-#define __XCP_PAR_H__
+#ifndef XCP_PAR_H
+#define XCP_PAR_H
 
 /* declare here parameters for customizing XcpBasic driver (e.g. kXcpStationId) */
 
 
-#endif
+#endif /* XCP_PAR_H */

@@ -232,6 +232,7 @@
 /* Includes for XcpProf.c/XcpBasic.c */
   #include "xcp_cfg.h"
   #include "xcp_par.h"
+#include "xcp_def.h"
 
 /* Include the Transport Layer for CAN (HIS CAN-Driver) if available. */
 #if defined ( XCP_TRANSPORT_LAYER_TYPE_CAN )

@@ -81,6 +81,9 @@
 #if !defined(XCP_ENABLE_SERV_TEXT_PRINTF) && !defined(XCP_DISABLE_SERV_TEXT_PRINTF)
   #define XCP_DISABLE_SERV_TEXT_PRINTF
 #endif
+#if !defined(XCP_ENABLE_SERV_TEXT_PRINT) && !defined(XCP_DISABLE_SERV_TEXT_PRINT)
+  #define XCP_DISABLE_SERV_TEXT_PRINT
+#endif
 
 /* Disable/Enable Interrupts */
 /* Has to be defined only if xcpSendCallBack may interrupt xcpEvent */

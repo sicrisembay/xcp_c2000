@@ -3,19 +3,19 @@
  */
 
 #include <xdc/std.h>
-
 #include <xdc/runtime/Error.h>
 #include <xdc/runtime/System.h>
-
 #include <ti/sysbios/BIOS.h>
-
 #include <ti/sysbios/knl/Task.h>
+#include "uart/uart.h"
 
 /*
  *  ======== taskFxn ========
  */
 Void taskFxn(UArg a0, UArg a1)
 {
+    UART_init();
+
     System_printf("enter taskFxn()\n");
 
     Task_sleep(10);
