@@ -8,21 +8,24 @@
 #include <ti/sysbios/BIOS.h>
 #include <ti/sysbios/knl/Task.h>
 #include "uart/uart.h"
+#include "XcpBasic.h"
 
 /*
  *  ======== taskFxn ========
  */
 Void taskFxn(UArg a0, UArg a1)
 {
+    extern void XcpReceiveCommand(void);
+
     UART_init();
 
-    System_printf("enter taskFxn()\n");
+    XcpInit();
 
-    Task_sleep(10);
-
-    System_printf("exit taskFxn()\n");
-
-    System_flush(); /* force SysMin output to console */
+    while(1) {
+        /* 10ms Polling */
+        Task_sleep(10);
+        XcpReceiveCommand();
+    }
 }
 
 /*

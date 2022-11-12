@@ -87,11 +87,11 @@
 
 /* Disable/Enable Interrupts */
 /* Has to be defined only if xcpSendCallBack may interrupt xcpEvent */
-#if !defined(XcpInterruptDisable)                
-  #define XcpInterruptDisable()                
+#if !defined(ApplXcpInterruptDisable)
+  #define ApplXcpInterruptDisable()
 #endif
-#if !defined(XcpInterruptEnable)
-  #define XcpInterruptEnable()                 
+#if !defined(ApplXcpInterruptEnable)
+  #define ApplXcpInterruptEnable()
 #endif
 
 /* Custom initialization not needed */
