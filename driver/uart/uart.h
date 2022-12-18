@@ -4,6 +4,7 @@
 #include "driver_def.h"
 #include <xdc/std.h>
 
+#if CONFIG_USE_UART || __DOXYGEN__
 
 typedef enum {
 #if CONFIG_ENABLE_UARTA
@@ -30,5 +31,5 @@ UInt16 UART_send(UART_ID_T uart_id, Char * pBuf, UInt16 count);
 
 UInt16 UART_receive(UART_ID_T uart_id, Char * pBuf, UInt16 count);
 
-
+#endif /* CONFIG_USE_UART || __DOXYGEN__ */
 #endif /* DRIVER_UART_H */

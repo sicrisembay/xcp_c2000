@@ -44,8 +44,8 @@ typedef signed long    vsint32;
 #define C_CPUTYPE_LITTLEENDIAN /* Intel */
 
 /* XCP message length */
-#define kXcpMaxCTO     14      /* Maximum CTO Message Lenght */
-#define kXcpMaxDTO     14      /* Maximum DTO Message Lenght */
+#define kXcpMaxCTO     8      /* Maximum CTO Message Lenght */
+#define kXcpMaxDTO     8      /* Maximum DTO Message Lenght */
 
 /* Enable/Disable parameter checking (save memory) */
 #define XCP_DISABLE_PARAMETER_CHECK

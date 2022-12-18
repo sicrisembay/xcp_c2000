@@ -1,4 +1,6 @@
 #include "driver_def.h"
+#if CONFIG_USE_UART || __DOXYGEN__
+
 #include "string.h"  /* for memset */
 #include <stdbool.h>
 #include <xdc/std.h>
@@ -337,3 +339,4 @@ UInt16 UART_receive(UART_ID_T uart_id, Char * pBuf, UInt16 count)
     return i;
 }
 
+#endif /* CONFIG_USE_UART || __DOXYGEN__ */
