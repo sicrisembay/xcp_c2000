@@ -3076,7 +3076,13 @@ void XcpCommand( const vuint32* pCommand )
 
           case CC_GET_DAQ_LIST_MODE:
             {
+  #if (defined( XCP_TI_C2000 ) && defined( XCP_CPUTYPE_LITTLEENDIAN ))
+              vuint16 daq = 0;
+              daq = (vuint16)CRO_BYTE(2);
+              daq |= (((vuint16)CRO_BYTE(3) & 0xFF) << 8);
+  #else
               vuint8 daq = (vuint8)CRO_GET_DAQ_LIST_MODE_DAQ;
+  #endif
 
   #if defined ( XCP_ENABLE_TESTMODE )
               if ( gDebugLevel != 0)
@@ -3100,9 +3106,21 @@ void XcpCommand( const vuint32* pCommand )
               CRM_GET_DAQ_LIST_MODE_PRESCALER = 1;
   #endif
   #if defined ( kXcpMaxEvent )
+    #if (defined( XCP_TI_C2000 ) && defined( XCP_CPUTYPE_LITTLEENDIAN ))
+              CRM_BYTE(4) = 0;
+              CRM_BYTE(5) = 0;
+    #else
               CRM_GET_DAQ_LIST_MODE_EVENTCHANNEL_WRITE(0); /* #### Lookup in EventDaq[] */ /* PRQA S 3109 */ /* MD_MSR_14.3 */
+    #endif
   #else
-              CRM_GET_DAQ_LIST_MODE_EVENTCHANNEL_WRITE(DaqListEventChannel(daq));
+    #if (defined( XCP_TI_C2000 ) && defined( XCP_CPUTYPE_LITTLEENDIAN ))
+              vuint16 event = DaqListEventChannel(daq);
+              CRM_BYTE(4) = (vuint8)(event & 0xFF);
+              CRM_BYTE(5) = ((vuint8)(event >> 8) & 0xFF);
+    #else
+              vuint16 event = DaqListEventChannel(daq);
+              CRM_GET_DAQ_LIST_MODE_EVENTCHANNEL_WRITE(event);
+    #endif
   #endif
               CRM_GET_DAQ_LIST_MODE_PRIORITY = 0;  /* DAQ-list prioritization is not supported. */
 
@@ -3110,7 +3128,7 @@ void XcpCommand( const vuint32* pCommand )
               if ( gDebugLevel != 0)
               {
                 ApplXcpPrint("<- 0xFF mode=%02X, prescaler=%u, eventChannel=%u, priority=%u, /*maxOdtEntrySize=%u*/  \n",
-                  CRM_GET_DAQ_LIST_MODE_MODE,CRM_GET_DAQ_LIST_MODE_PRESCALER,CRM_GET_DAQ_LIST_MODE_EVENTCHANNEL,CRM_GET_DAQ_LIST_MODE_PRIORITY);
+                  CRM_GET_DAQ_LIST_MODE_MODE,CRM_GET_DAQ_LIST_MODE_PRESCALER,event,CRM_GET_DAQ_LIST_MODE_PRIORITY);
               }
   #endif
             }
@@ -3118,11 +3136,23 @@ void XcpCommand( const vuint32* pCommand )
 
           case CC_SET_DAQ_LIST_MODE:
             {
-              vuint8 daq = (vuint8)CRO_SET_DAQ_LIST_MODE_DAQ;
+  #if (defined ( XCP_TI_C2000) && defined ( XCP_CPUTYPE_LITTLEENDIAN ) )
+                vuint16 daq = 0;
+                daq = (vuint16)CRO_BYTE(2);
+                daq |= (((vuint16)CRO_BYTE(3) & 0xFF) << 8);
+  #else
+                vuint8 daq = (vuint8)CRO_SET_DAQ_LIST_MODE_DAQ;
+  #endif
   #if defined ( XCP_ENABLE_TESTMODE ) || defined ( XCP_ENABLE_DAQ_PRESCALER ) || ( !defined ( XCP_ENABLE_DAQ_PRESCALER ) && defined ( XCP_ENABLE_PARAMETER_CHECK ) )
               vuint8 xcpPrescaler = CRO_SET_DAQ_LIST_MODE_PRESCALER;
   #endif
+  #if (defined ( XCP_TI_C2000) && defined ( XCP_CPUTYPE_LITTLEENDIAN ) )
+              vuint16 event = 0;
+              event = (vuint16)CRO_BYTE(4);
+              event |= (((vuint16)CRO_BYTE(5) & 0xFF) << 8);
+  #else
               vuint8 event = (vuint8)(CRO_SET_DAQ_LIST_MODE_EVENTCHANNEL&0xFFu);
+  #endif
  
   #if defined ( XCP_ENABLE_TESTMODE )
               if ( gDebugLevel != 0)
@@ -3215,10 +3245,20 @@ void XcpCommand( const vuint32* pCommand )
           case CC_WRITE_DAQ: /* Write DAQ entry */
             {
               DAQBYTEPTR addr;
+  #if defined ( XCP_TI_C2000 ) && defined ( XCP_CPUTYPE_LITTLEENDIAN )
+              vuint32 tmpAddr = 0;
+              tmpAddr = (vuint32)CRO_BYTE(4) & 0xFF;
+              tmpAddr |= (((vuint32)CRO_BYTE(5) & 0xFF) << 8);
+              tmpAddr |= (((vuint32)CRO_BYTE(6) & 0xFF) << 16);
+              tmpAddr |= (((vuint32)CRO_BYTE(7) & 0xFF) << 24);
+  #else
+              vuint32 tmpAddr = CRO_WRITE_DAQ_ADDR;
+  #endif
+
   #if defined ( XCP_ENABLE_TESTMODE )
               if ( gDebugLevel != 0)
               {
-                ApplXcpPrint("-> WRITE_DAQ size=%u,addr=%08Xh,%02Xh\n",CRO_WRITE_DAQ_SIZE,CRO_WRITE_DAQ_ADDR,CRO_WRITE_DAQ_EXT);
+                ApplXcpPrint("-> WRITE_DAQ size=%u,addr=%08Xh,%02Xh\n",CRO_WRITE_DAQ_SIZE,tmpAddr,CRO_WRITE_DAQ_EXT);
               }
   #endif
 
@@ -3234,7 +3274,7 @@ void XcpCommand( const vuint32* pCommand )
                 error(CRC_DAQ_CONDIF) /* PRQA S 2001 */ /* MD_Xcp_2001 */
               } 
   #endif
-              addr = (DAQBYTEPTR)ApplXcpGetPointer(CRO_WRITE_DAQ_EXT,CRO_WRITE_DAQ_ADDR);
+              addr = (DAQBYTEPTR)ApplXcpGetPointer(CRO_WRITE_DAQ_EXT,tmpAddr);
 
               xcp.CrmLen = CRM_WRITE_DAQ_LEN;
               OdtEntrySize(xcp.DaqListPtr) = CRO_WRITE_DAQ_SIZE;
@@ -3253,8 +3293,13 @@ void XcpCommand( const vuint32* pCommand )
 
           case CC_START_STOP_DAQ_LIST:
             {
+  #if (defined ( XCP_TI_C2000 ) && defined ( XCP_CPUTYPE_LITTLEENDIAN ) )
+              vuint16 daq = 0;
+              daq = (vuint16)CRO_BYTE(2) & 0xFF;
+              daq |= (((vuint16)CRO_BYTE(3) >> 8) & 0xFF);
+  #else
               vuint8 daq = (vuint8)(CRO_START_STOP_DAQ&0xFFu);
-
+  #endif
               CheckResourceProtection( RM_DAQ ) /* PRQA S 2001 */ /* MD_Xcp_2001 */
 
   #if defined ( XCP_ENABLE_PARAMETER_CHECK )
@@ -3271,7 +3316,7 @@ void XcpCommand( const vuint32* pCommand )
                   if ( gDebugLevel != 0)
                   {
                     XcpPrintDaqList((vuint8)(CRO_START_STOP_DAQ)&0xFFu);
-                    ApplXcpPrint("-> START_STOP mode=%02Xh, daq=%u\n",CRO_START_STOP_MODE,CRO_START_STOP_DAQ);
+                    ApplXcpPrint("-> START_STOP mode=%02Xh, daq=%u\n",CRO_START_STOP_MODE,daq);
                   }
   #endif
                 if ( CRO_START_STOP_MODE == (vuint8)1u )
