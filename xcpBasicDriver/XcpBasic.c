@@ -1822,7 +1822,7 @@ vuint8 XcpBackground( void )
   #if defined ( XCP_ENABLE_TESTMODE )
     if ( gDebugLevel != 0) 
     {
-      ApplXcpPrint("<- 0xFF checksum=%08Xh, type=%02Xh\n",CRM_BUILD_CHECKSUM_RESULT,CRM_BUILD_CHECKSUM_TYPE);
+      ApplXcpPrint("<- 0xFF checksum=%08xh, type=%02xh\n",CRM_BUILD_CHECKSUM_RESULT,CRM_BUILD_CHECKSUM_TYPE);
     }
   #endif
 
@@ -1973,13 +1973,13 @@ void XcpCommand( const vuint32* pCommand )
     CRM_CONNECT_COMM_BASIC |= (vuint8)CMB_ADDRESS_GRANULARITY_BYTE;
 #endif
 
-    XCP_PRINT(("<- 0xFF version=%02Xh/%02Xh, maxcro=%02Xh, maxdto=%02Xh, resource=%02X, mode=%02X\n",
+    XCP_PRINT("<- 0xFF version=%02xh/%02xh, maxcro=%02xh, maxdto=%02xh, resource=%02x, mode=%02x\n",
         CRM_CONNECT_PROTOCOL_VERSION,
         CRM_CONNECT_TRANSPORT_VERSION,
         CRM_CONNECT_MAX_CTO_SIZE,
         CRM_CONNECT_MAX_DTO_SIZE,
         CRM_CONNECT_RESOURCE,
-        CRM_CONNECT_COMM_BASIC));
+        CRM_CONNECT_COMM_BASIC);
 
     goto positive_response; /* PRQA S 2001 */ /* MD_Xcp_2001 */
 
@@ -2128,7 +2128,7 @@ void XcpCommand( const vuint32* pCommand )
               if ( gDebugLevel != 0)
               {
                 ApplXcpPrint("-> GET_STATUS\n");
-                ApplXcpPrint("<- 0xFF sessionstatus=%02Xh, protectionstatus=%02X\n",CRM_GET_STATUS_STATUS,CRM_GET_STATUS_PROTECTION);
+                ApplXcpPrint("<- 0xFF sessionstatus=%02xh, protectionstatus=%02x\n",CRM_GET_STATUS_STATUS,CRM_GET_STATUS_PROTECTION);
               }
 #endif
             }
@@ -2188,8 +2188,8 @@ void XcpCommand( const vuint32* pCommand )
   #if defined ( XCP_ENABLE_TESTMODE )
               if ( gDebugLevel != 0)
               {
-                ApplXcpPrint("-> GET_SEED resource=%02Xh\n",CRO_GET_SEED_RESOURCE);
-                ApplXcpPrint("<- 0xFF length=%02Xh, seed=%02X%02X%02X%02X%02X%02X\n",CRM_GET_SEED_LENGTH,CRM_GET_SEED_DATA[0],CRM_GET_SEED_DATA[1],CRM_GET_SEED_DATA[2],CRM_GET_SEED_DATA[3],CRM_GET_SEED_DATA[4],CRM_GET_SEED_DATA[5]);
+                ApplXcpPrint("-> GET_SEED resource=%02xh\n",CRO_GET_SEED_RESOURCE);
+                ApplXcpPrint("<- 0xFF length=%02xh, seed=%02x%02x%02x%02x%02x%02x\n",CRM_GET_SEED_LENGTH,CRM_GET_SEED_DATA[0],CRM_GET_SEED_DATA[1],CRM_GET_SEED_DATA[2],CRM_GET_SEED_DATA[3],CRM_GET_SEED_DATA[4],CRM_GET_SEED_DATA[5]);
               }
   #endif
             }
@@ -2202,7 +2202,7 @@ void XcpCommand( const vuint32* pCommand )
   #if defined ( XCP_ENABLE_TESTMODE )
               if ( gDebugLevel != 0)
               {
-                ApplXcpPrint("-> UNLOCK key=%02X%02X%02X%02X%02X%02X\n",CRO_UNLOCK_KEY[0],CRO_UNLOCK_KEY[1],CRO_UNLOCK_KEY[2],CRO_UNLOCK_KEY[3],CRO_UNLOCK_KEY[4],CRO_UNLOCK_KEY[5]);
+                ApplXcpPrint("-> UNLOCK key=%02x%02x%02x%02x%02x%02x\n",CRO_UNLOCK_KEY[0],CRO_UNLOCK_KEY[1],CRO_UNLOCK_KEY[2],CRO_UNLOCK_KEY[3],CRO_UNLOCK_KEY[4],CRO_UNLOCK_KEY[5]);
               }
   #endif
 
@@ -2251,7 +2251,7 @@ void XcpCommand( const vuint32* pCommand )
   #if defined ( XCP_ENABLE_TESTMODE )
               if ( gDebugLevel != 0)
               {
-                ApplXcpPrint("-> SET_CAL_PAGE segment=%u,page =%u,mode=%02Xh\n",CRO_SET_CAL_PAGE_SEGMENT,CRO_SET_CAL_PAGE_PAGE,CRO_SET_CAL_PAGE_MODE);
+                ApplXcpPrint("-> SET_CAL_PAGE segment=%u,page =%u,mode=%02xh\n",CRO_SET_CAL_PAGE_SEGMENT,CRO_SET_CAL_PAGE_PAGE,CRO_SET_CAL_PAGE_MODE);
               }
   #endif
 
@@ -2509,7 +2509,7 @@ void XcpCommand( const vuint32* pCommand )
 #if defined ( XCP_ENABLE_TESTMODE )
               if ( gDebugLevel != 0)
               {
-                ApplXcpPrint("-> SET_MTA addr=%08Xh, addrext=%02Xh\n",tmpAddr,CRO_SET_MTA_EXT);
+                ApplXcpPrint("-> SET_MTA addr=%08xh, addrext=%02xh\n",tmpAddr,CRO_SET_MTA_EXT);
               }
 #endif
               XcpSetMta(ApplXcpGetPointer(CRO_SET_MTA_EXT,tmpAddr),CRO_SET_MTA_EXT);
@@ -2544,7 +2544,7 @@ void XcpCommand( const vuint32* pCommand )
                 ApplXcpPrint("-> DOWNLOAD size=%u, data=",size);
                 for (i=0;(i<size) && (i<CRO_DOWNLOAD_MAX_SIZE);i++)
                 {
-                  ApplXcpPrint("%02X ",CRO_DOWNLOAD_DATA[i]);
+                  ApplXcpPrint("%02x ",CRO_DOWNLOAD_DATA[i]);
                 }
                 ApplXcpPrint("\n");
               }
@@ -2599,7 +2599,7 @@ void XcpCommand( const vuint32* pCommand )
                 ApplXcpPrint("DOWNLOAD_MAX data=");
                 for (i=0;i<CRO_DOWNLOAD_MAX_MAX_SIZE;i++)
                 {
-                  ApplXcpPrint("%02X ",CRO_DOWNLOAD_MAX_DATA[i]);
+                  ApplXcpPrint("%02x ",CRO_DOWNLOAD_MAX_DATA[i]);
                 }
                 ApplXcpPrint("\n");
               }
@@ -2685,7 +2685,7 @@ void XcpCommand( const vuint32* pCommand )
                 ApplXcpPrint("<- 0xFF data=");
                 for (i=0;i<size;i++) 
                 {
-                  ApplXcpPrint("%02X ",CRM_UPLOAD_DATA[i]);
+                  ApplXcpPrint("%02x ",CRM_UPLOAD_DATA[i]);
                 }
                 ApplXcpPrint("\n");
               }
@@ -2717,7 +2717,7 @@ void XcpCommand( const vuint32* pCommand )
 #if defined ( XCP_ENABLE_TESTMODE )
               if ( gDebugLevel != 0)
               {
-                ApplXcpPrint("-> SHORT_UPLOAD addr=%08Xh, addrext=%02Xh, size=%u\n", tmpAddr, CRO_SHORT_UPLOAD_EXT, size);
+                ApplXcpPrint("-> SHORT_UPLOAD addr=%08xh, addrext=%02xh, size=%u\n", tmpAddr, CRO_SHORT_UPLOAD_EXT, size);
               }
 #endif
 
@@ -2750,7 +2750,7 @@ void XcpCommand( const vuint32* pCommand )
                 ApplXcpPrint("<- 0xFF data=");
                 for (i=0; i < (vuint16)size; i++)
                 {
-                  ApplXcpPrint("%02X ",CRM_SHORT_UPLOAD_DATA[i]);
+                  ApplXcpPrint("%02x ",CRM_SHORT_UPLOAD_DATA[i]);
                 }
                 ApplXcpPrint("\n");
               }
@@ -2919,7 +2919,7 @@ void XcpCommand( const vuint32* pCommand )
     #if defined ( XCP_ENABLE_TESTMODE )
                 if ( gDebugLevel != 0)
                 {
-                  ApplXcpPrint("<- 0xFF , mode=%02Xh, , ticks=%02Xh\n",CRM_GET_DAQ_RESOLUTION_INFO_TIMESTAMP_MODE,CRM_GET_DAQ_RESOLUTION_INFO_TIMESTAMP_TICKS);
+                  ApplXcpPrint("<- 0xFF , mode=%02xh, , ticks=%02xh\n",CRM_GET_DAQ_RESOLUTION_INFO_TIMESTAMP_MODE,CRM_GET_DAQ_RESOLUTION_INFO_TIMESTAMP_TICKS);
                 }
     #endif
               }
@@ -3127,7 +3127,7 @@ void XcpCommand( const vuint32* pCommand )
   #if defined ( XCP_ENABLE_TESTMODE )
               if ( gDebugLevel != 0)
               {
-                ApplXcpPrint("<- 0xFF mode=%02X, prescaler=%u, eventChannel=%u, priority=%u, /*maxOdtEntrySize=%u*/  \n",
+                ApplXcpPrint("<- 0xFF mode=%02x, prescaler=%u, eventChannel=%u, priority=%u, /*maxOdtEntrySize=%u*/  \n",
                   CRM_GET_DAQ_LIST_MODE_MODE,CRM_GET_DAQ_LIST_MODE_PRESCALER,event,CRM_GET_DAQ_LIST_MODE_PRIORITY);
               }
   #endif
@@ -3157,7 +3157,7 @@ void XcpCommand( const vuint32* pCommand )
   #if defined ( XCP_ENABLE_TESTMODE )
               if ( gDebugLevel != 0)
               {
-                ApplXcpPrint("-> SET_DAQ_LIST_MODE daq=%u, mode=%02Xh, prescaler=%u, eventchannel=%u\n",
+                ApplXcpPrint("-> SET_DAQ_LIST_MODE daq=%u, mode=%02xh, prescaler=%u, eventchannel=%u\n",
                   daq,CRO_SET_DAQ_LIST_MODE_MODE,xcpPrescaler,event);
               }
   #endif
@@ -3258,7 +3258,7 @@ void XcpCommand( const vuint32* pCommand )
   #if defined ( XCP_ENABLE_TESTMODE )
               if ( gDebugLevel != 0)
               {
-                ApplXcpPrint("-> WRITE_DAQ size=%u,addr=%08Xh,%02Xh\n",CRO_WRITE_DAQ_SIZE,tmpAddr,CRO_WRITE_DAQ_EXT);
+                ApplXcpPrint("-> WRITE_DAQ size=%u,addr=%08xh,%02xh\n",CRO_WRITE_DAQ_SIZE,tmpAddr,CRO_WRITE_DAQ_EXT);
               }
   #endif
 
@@ -3316,7 +3316,7 @@ void XcpCommand( const vuint32* pCommand )
                   if ( gDebugLevel != 0)
                   {
                     XcpPrintDaqList((vuint8)(CRO_START_STOP_DAQ)&0xFFu);
-                    ApplXcpPrint("-> START_STOP mode=%02Xh, daq=%u\n",CRO_START_STOP_MODE,daq);
+                    ApplXcpPrint("-> START_STOP mode=%02xh, daq=%u\n",CRO_START_STOP_MODE,daq);
                   }
   #endif
                 if ( CRO_START_STOP_MODE == (vuint8)1u )
@@ -3332,7 +3332,7 @@ void XcpCommand( const vuint32* pCommand )
   #if defined ( XCP_ENABLE_TESTMODE )
                 if ( gDebugLevel != 0)
                 {
-                  ApplXcpPrint("-> START_STOP mode=%02Xh\n",CRO_START_STOP_MODE);
+                  ApplXcpPrint("-> START_STOP mode=%02xh\n",CRO_START_STOP_MODE);
                 }
   #endif
               }
@@ -3351,7 +3351,7 @@ void XcpCommand( const vuint32* pCommand )
   #if defined ( XCP_ENABLE_TESTMODE )
               if ( gDebugLevel != 0)
               {
-                ApplXcpPrint("-> CC_START_STOP_SYNCH mode=%02Xh\n",CRO_START_STOP_MODE);
+                ApplXcpPrint("-> CC_START_STOP_SYNCH mode=%02xh\n",CRO_START_STOP_MODE);
               }
   #endif
 
@@ -3398,7 +3398,7 @@ void XcpCommand( const vuint32* pCommand )
               if ( gDebugLevel != 0)
               {
                 ApplXcpPrint("-> GET_DAQ_CLOCK\n");
-                ApplXcpPrint("<- 0xFF time=%04Xh\n",CRM_GET_DAQ_CLOCK_TIME);
+                ApplXcpPrint("<- 0xFF time=%04xh\n",CRM_GET_DAQ_CLOCK_TIME);
               }
     #endif
             }
@@ -3462,7 +3462,7 @@ void XcpCommand( const vuint32* pCommand )
   #if defined ( XCP_ENABLE_TESTMODE )
               if ( gDebugLevel != 0)
               {
-                ApplXcpPrint("-> UNKNOWN COMMAND %02X\n", CRO_CMD);
+                ApplXcpPrint("-> UNKNOWN COMMAND %02x\n", CRO_CMD);
               }
   #endif
               error(CRC_CMD_UNKNOWN) /* PRQA S 2001 */ /* MD_Xcp_2001 */
@@ -3491,7 +3491,7 @@ negative_response1:
 #if defined ( XCP_ENABLE_TESTMODE )
   if ( gDebugLevel != 0) 
   {
-    ApplXcpPrint("<- 0xFE error=%02Xh\n",err);
+    ApplXcpPrint("<- 0xFE error=%02xh\n",err);
   }
 #endif
  
@@ -3944,19 +3944,19 @@ void XcpPrintDaqList( vuint8 daq )
   {
     if (xcp.Daq.EventDaq[i]==daq)
     {
-      ApplXcpPrint(" eventchannel=%04Xh,",i);
+      ApplXcpPrint(" eventchannel=%04xh,",i);
     }
   }
     #else
-  ApplXcpPrint(" eventchannel=%04Xh,",DaqListEventChannel(daq));
+  ApplXcpPrint(" eventchannel=%04xh,",DaqListEventChannel(daq));
     #endif
     #if defined (XCP_ENABLE_DAQ_PRESCALER )
   ApplXcpPrint(" prescaler=%u,",DaqListPrescaler(daq));
     #endif
   ApplXcpPrint(" firstOdt=%u,",DaqListFirstOdt(daq));
   ApplXcpPrint(" lastOdt=%u,",DaqListLastOdt(daq));
-  ApplXcpPrint(" flags=%02Xh\n",DaqListFlags(daq));
-  ApplXcpPrint(" firstPid=%02Xh\n",DaqListFirstPid(daq)); 
+  ApplXcpPrint(" flags=%02xh\n",DaqListFlags(daq));
+  ApplXcpPrint(" firstPid=%02xh\n",DaqListFirstPid(daq));
   for (i=DaqListFirstOdt(daq);i<=DaqListLastOdt(daq);i++)
   {
     ApplXcpPrint("  ODT %u (%u):\n",i-DaqListFirstOdt(daq),i);
@@ -3964,7 +3964,7 @@ void XcpPrintDaqList( vuint8 daq )
     ApplXcpPrint("   firstOdtEntry=%u,lastOdtEntry=%u:\n",DaqListOdtFirstEntry(i),DaqListOdtLastEntry(i));
     for (e=DaqListOdtFirstEntry(i);e<=DaqListOdtLastEntry(i);e++)
     {
-      ApplXcpPrint("   [%08Xh,%u]\n",OdtEntryAddr(e),OdtEntrySize(e));
+      ApplXcpPrint("   [%08xh,%u]\n",OdtEntryAddr(e),OdtEntrySize(e));
     }
   } /* j */
 } /* Deviation of MISRA rule 82 (more than one return path). */
