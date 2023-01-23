@@ -798,10 +798,56 @@ static vuint8 XcpWriteMta( vuint8 size, const BYTEPTR data )
 #else
   while ( size > (vuint8)0u ) 
   {
+#if defined ( CPUMEM_AG_DWORD )
+    vuint32 tmpData = 0;
+#if defined ( XCP_CPUTYPE_LITTLEENDIAN )
+    tmpData = (vuint32)(*data) & 0xFF;
+    data++;
+    tmpData |= ((vuint16)(*data) & 0xFF) << 8;
+    data++;
+    tmpData |= ((vuint16)(*data) & 0xFF) << 16;
+    data++;
+    tmpData |= ((vuint16)(*data) & 0xFF) << 24;
+    data++;
+#elif defined ( XCP_CPUTYPE_BIGENDIAN )
+    tmpData |= ((vuint16)(*data) & 0xFF) << 24;
+    data++;
+    tmpData |= ((vuint16)(*data) & 0xFF) << 16;
+    data++;
+    tmpData |= ((vuint16)(*data) & 0xFF) << 8;
+    data++;
+    tmpData = (vuint32)(*data) & 0xFF;
+    data++;
+#else
+    #error "Undefined ENDIANESS!"
+#endif
+    *(xcp.Mta) = tmpData;
+    xcp.Mta++;
+    size -= 4;
+#elif defined ( CPUMEM_AG_WORD )
+    vuint16 tmpData = 0;
+#if defined ( XCP_CPUTYPE_LITTLEENDIAN )
+    tmpData = (vuint16)(*data) & 0xFF;
+    data++;
+    tmpData |= ((vuint16)(*data) & 0xFF) << 8;
+    data++;
+#elif defined ( XCP_CPUTYPE_BIGENDIAN )
+    tmpData |= ((vuint16)(*data) & 0xFF) << 8;
+    data++;
+    tmpData = (vuint16)(*data) & 0xFF;
+    data++;
+#else
+    #error "Undefined ENDIANESS!"
+#endif
+    *(xcp.Mta) = tmpData;
+    xcp.Mta++;
+    size -= 2;
+#else
     XCP_WRITE_BYTE_2_ADDR( xcp.Mta, *data );
     xcp.Mta++; /* PRQA S 0489 */ /* MD_Xcp_0489 */
     data++; /* PRQA S 0489 */ /* MD_Xcp_0489 */
     size--;
+#endif
   }
   return (vuint8)XCP_CMD_OK;
 #endif
@@ -857,6 +903,7 @@ static vuint8 XcpReadMta( vuint8 size, BYTEPTR data )
     */
 #if defined ( CPUMEM_AG_DWORD )
     tmpData = (vuint32)(XCP_READ_BYTE_FROM_ADDR( xcp.Mta ));
+#if defined ( XCP_CPUTYPE_LITTLEENDIAN )
     *(data) = tmpData & 0xFF;
     data++;
     *(data) = (tmpData >> 8) & 0xFF;
@@ -865,14 +912,35 @@ static vuint8 XcpReadMta( vuint8 size, BYTEPTR data )
     data++;
     *(data) = (tmpData >> 24) & 0xFF;
     data++;
+#elif defined (XCP_CPUTYPE_BIGENDIAN)
+    *(data) = (tmpData >> 24) & 0xFF;
+    data++;
+    *(data) = (tmpData >> 16) & 0xFF;
+    data++;
+    *(data) = (tmpData >> 8) & 0xFF;
+    data++;
+    *(data) = tmpData & 0xFF;
+    data++;
+#else
+  #error "Undefined ENDIANESS!"
+#endif
     xcp.Mta++;
     size -= 4;
 #elif defined ( CPUMEM_AG_WORD )
     tmpData = (vuint16)(XCP_READ_BYTE_FROM_ADDR( xcp.Mta ));
+#if defined ( XCP_CPUTYPE_LITTLEENDIAN )
     *(data) = tmpData & 0xFF;
     data++;
     *(data) = (tmpData >> 8) & 0xFF;
     data++;
+#elif defined ( XCP_CPUTYPE_BIGENDIAN )
+    *(data) = (tmpData >> 8) & 0xFF;
+    data++;
+    *(data) = tmpData & 0xFF;
+    data++;
+#else
+  #error "Undefined ENDIANESS!"
+#endif
     xcp.Mta++;
     size -= 2;
 #else
@@ -2429,11 +2497,11 @@ void XcpCommand( const vuint32* pCommand )
           case CC_SET_MTA:
             {
                 vuint32 tmpAddr = 0;
-#if defined ( XCP_TI_C2000 )
-                tmpAddr = ((vuint32)CRO_BYTE(7) & 0xFF);
-                tmpAddr |= (((vuint32)CRO_BYTE(6) & 0xFF) << 8);
-                tmpAddr |= (((vuint32)CRO_BYTE(5) & 0xFF) << 16);
-                tmpAddr |= (((vuint32)CRO_BYTE(4) & 0xFF) << 24);
+#if defined ( XCP_TI_C2000 ) && defined ( XCP_CPUTYPE_LITTLEENDIAN )
+                tmpAddr = ((vuint32)CRO_BYTE(4) & 0xFF);
+                tmpAddr |= (((vuint32)CRO_BYTE(5) & 0xFF) << 8);
+                tmpAddr |= (((vuint32)CRO_BYTE(6) & 0xFF) << 16);
+                tmpAddr |= (((vuint32)CRO_BYTE(7) & 0xFF) << 24);
 #else
                 tmpAddr = CRO_SET_MTA_ADDR;
 #endif
@@ -2461,13 +2529,20 @@ void XcpCommand( const vuint32* pCommand )
             {
 #if defined ( XCP_ENABLE_CALIBRATION )
               vuint8 size;
+#if defined ( CPUMEM_AG_DWORD )
+              size = CRO_DOWNLOAD_SIZE * 4;
+#elif defined ( CPUMEM_AG_WORD )
+              size = CRO_DOWNLOAD_SIZE * 2;
+#else
+              size = CRO_DOWNLOAD_SIZE;
+#endif
 
 #if defined ( XCP_ENABLE_TESTMODE )
               if (gDebugLevel && (CRO_CMD != CC_DOWNLOAD_NEXT))
               {
                 vuint16 i;
-                ApplXcpPrint("-> DOWNLOAD size=%u, data=",CRO_DOWNLOAD_SIZE);
-                for (i=0;(i<CRO_DOWNLOAD_SIZE) && (i<CRO_DOWNLOAD_MAX_SIZE);i++)
+                ApplXcpPrint("-> DOWNLOAD size=%u, data=",size);
+                for (i=0;(i<size) && (i<CRO_DOWNLOAD_MAX_SIZE);i++)
                 {
                   ApplXcpPrint("%02X ",CRO_DOWNLOAD_DATA[i]);
                 }
@@ -2477,13 +2552,16 @@ void XcpCommand( const vuint32* pCommand )
 
               CheckResourceProtection( RM_CAL_PAG ) /* PRQA S 2001 */ /* MD_Xcp_2001 */
 
-              size = CRO_DOWNLOAD_SIZE;
               if (size>CRO_DOWNLOAD_MAX_SIZE)
               {
                 error(CRC_OUT_OF_RANGE) /* PRQA S 2001 */ /* MD_Xcp_2001 */
               }
 
+#if defined ( CPUMEM_AG_DWORD)
+              err = XcpWriteMta(size,(&CRO_BYTE(4)));  /* If AG = DWORD, 2 alignment bytes are used */
+#else
               err = XcpWriteMta(size,CRO_DOWNLOAD_DATA);
+#endif
               if (err==(vuint8)XCP_CMD_PENDING) 
               {
                 goto no_response; /* PRQA S 2001 */ /* MD_Xcp_2001 */
@@ -2528,8 +2606,15 @@ void XcpCommand( const vuint32* pCommand )
   #endif
 
               CheckResourceProtection( RM_CAL_PAG ) /* PRQA S 2001 */ /* MD_Xcp_2001 */
-
+#if defined ( CPUMEM_AG_DWORD )
+              vuint8 elements = (kXcpMaxCTO / 4) - 1;
+              err = XcpWriteMta(elements * 4, (&CRO_BYTE(4)));  /* CRO_BYTE(1:3) is used for alignment (3 bytes) */
+#elif defined ( CPUMEM_AG_WORD )
+              vuint8 elements = (kXcpMaxCTO / 2) - 1;
+              err = XcpWriteMta(elements * 2, (&CRO_BYTE(2)));  /* CRO_BYTE(1) is used for alignment (1 byte) */
+#else
               err = XcpWriteMta(CRO_DOWNLOAD_MAX_MAX_SIZE,CRO_DOWNLOAD_MAX_DATA);
+#endif
               if (err==(vuint8)XCP_CMD_PENDING)
               {
                 return;
@@ -2618,12 +2703,12 @@ void XcpCommand( const vuint32* pCommand )
               vuint8 size = CRO_SHORT_UPLOAD_SIZE;
 #endif
 
-#if defined ( XCP_TI_C2000 )
+#if defined ( XCP_TI_C2000 ) && defined ( XCP_CPUTYPE_LITTLEENDIAN )
               vuint32 tmpAddr = 0;
-              tmpAddr = ((vuint32)CRO_BYTE(7) & 0xFF);
-              tmpAddr |= (((vuint32)CRO_BYTE(6) & 0xFF) << 8);
-              tmpAddr |= (((vuint32)CRO_BYTE(5) & 0xFF) << 16);
-              tmpAddr |= (((vuint32)CRO_BYTE(4) & 0xFF) << 24);
+              tmpAddr = ((vuint32)CRO_BYTE(4) & 0xFF);
+              tmpAddr |= (((vuint32)CRO_BYTE(5) & 0xFF) << 8);
+              tmpAddr |= (((vuint32)CRO_BYTE(6) & 0xFF) << 16);
+              tmpAddr |= (((vuint32)CRO_BYTE(7) & 0xFF) << 24);
 #else
               vuint32 tmpAddr = 0;
               tmpAddr = CRO_SET_MTA_ADDR;
