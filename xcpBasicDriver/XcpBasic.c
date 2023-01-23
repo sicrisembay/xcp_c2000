@@ -824,6 +824,19 @@ static vuint8 XcpReadMta( vuint8 size, BYTEPTR data )
   vuint8 r;
 #endif
 
+#if defined ( CPUMEM_AG_DWORD )
+  vuint32 tmpData;
+  *(data) = 0;   /* Used for alignment if AG > 1 */
+  data++;
+#elif defined ( CPUMEM_AG_WORD )
+  vuint16 tmpData;
+  *(data) = 0;   /* Used for alignment if AG > 1 */
+  data++;
+#else
+  vuint8 tmpData;
+#endif
+
+
   /* DPRAM Client */
 
   /* Checked ram memory read access */
@@ -842,10 +855,32 @@ static vuint8 XcpReadMta( vuint8 size, BYTEPTR data )
        Compiler bug Tasking
        *(data++) = *(xcp.Mta++);
     */
+#if defined ( CPUMEM_AG_DWORD )
+    tmpData = (vuint32)(XCP_READ_BYTE_FROM_ADDR( xcp.Mta ));
+    *(data) = tmpData & 0xFF;
+    data++;
+    *(data) = (tmpData >> 8) & 0xFF;
+    data++;
+    *(data) = (tmpData >> 16) & 0xFF;
+    data++;
+    *(data) = (tmpData >> 24) & 0xFF;
+    data++;
+    xcp.Mta++;
+    size -= 4;
+#elif defined ( CPUMEM_AG_WORD )
+    tmpData = (vuint16)(XCP_READ_BYTE_FROM_ADDR( xcp.Mta ));
+    *(data) = tmpData & 0xFF;
+    data++;
+    *(data) = (tmpData >> 8) & 0xFF;
+    data++;
+    xcp.Mta++;
+    size -= 2;
+#else
     *(data) = XCP_READ_BYTE_FROM_ADDR( xcp.Mta );
     data++; /* PRQA S 0489 */ /* MD_Xcp_0489 */
     xcp.Mta++; /* PRQA S 0489 */ /* MD_Xcp_0489 */
     size--;
+#endif
   }
   return (vuint8)XCP_CMD_OK;
 #endif
@@ -1862,6 +1897,14 @@ void XcpCommand( const vuint32* pCommand )
     CRM_CONNECT_COMM_BASIC |= (vuint8)PI_MOTOROLA;
 #endif
 
+#if defined ( CPUMEM_AG_DWORD )
+    CRM_CONNECT_COMM_BASIC |= (vuint8)CMB_ADDRESS_GRANULARITY_DWORD;
+#elif defined (CPUMEM_AG_WORD)
+    CRM_CONNECT_COMM_BASIC |= (vuint8)CMB_ADDRESS_GRANULARITY_WORD;
+#else
+    CRM_CONNECT_COMM_BASIC |= (vuint8)CMB_ADDRESS_GRANULARITY_BYTE;
+#endif
+
     XCP_PRINT(("<- 0xFF version=%02Xh/%02Xh, maxcro=%02Xh, maxdto=%02Xh, resource=%02X, mode=%02X\n",
         CRM_CONNECT_PROTOCOL_VERSION,
         CRM_CONNECT_TRANSPORT_VERSION,
@@ -2385,13 +2428,23 @@ void XcpCommand( const vuint32* pCommand )
 
           case CC_SET_MTA:
             {
+                vuint32 tmpAddr = 0;
+#if defined ( XCP_TI_C2000 )
+                tmpAddr = ((vuint32)CRO_BYTE(7) & 0xFF);
+                tmpAddr |= (((vuint32)CRO_BYTE(6) & 0xFF) << 8);
+                tmpAddr |= (((vuint32)CRO_BYTE(5) & 0xFF) << 16);
+                tmpAddr |= (((vuint32)CRO_BYTE(4) & 0xFF) << 24);
+#else
+                tmpAddr = CRO_SET_MTA_ADDR;
+#endif
+
 #if defined ( XCP_ENABLE_TESTMODE )
               if ( gDebugLevel != 0)
               {
-                ApplXcpPrint("-> SET_MTA addr=%08Xh, addrext=%02Xh\n",CRO_SET_MTA_ADDR,CRO_SET_MTA_EXT);
+                ApplXcpPrint("-> SET_MTA addr=%08Xh, addrext=%02Xh\n",tmpAddr,CRO_SET_MTA_EXT);
               }
 #endif
-              XcpSetMta(ApplXcpGetPointer(CRO_SET_MTA_EXT,CRO_SET_MTA_ADDR),CRO_SET_MTA_EXT);
+              XcpSetMta(ApplXcpGetPointer(CRO_SET_MTA_EXT,tmpAddr),CRO_SET_MTA_EXT);
 
 
 #if defined ( XCP_ENABLE_TESTMODE )
@@ -2506,7 +2559,13 @@ void XcpCommand( const vuint32* pCommand )
 
           case CC_UPLOAD:
             {
+#if defined ( CPUMEM_AG_DWORD )
+              vuint8 size = CRO_UPLOAD_SIZE * 4;
+#elif defined ( CPUMEM_AG_WORD )
+              vuint8 size = CRO_UPLOAD_SIZE * 2;
+#else
               vuint8 size = CRO_UPLOAD_SIZE;
+#endif
 
 #if defined ( XCP_ENABLE_TESTMODE )
               if ( gDebugLevel != 0)
@@ -2520,7 +2579,11 @@ void XcpCommand( const vuint32* pCommand )
                 error(CRC_OUT_OF_RANGE) /* PRQA S 2001 */ /* MD_Xcp_2001 */
               }
               err = XcpReadMta(size,CRM_UPLOAD_DATA);
+#if defined ( CPUMEM_AG_BYTE )
               xcp.CrmLen = (vuint8)((CRM_UPLOAD_LEN+size)&0xFFu);
+#else
+              xcp.CrmLen = (vuint8)((CRM_UPLOAD_LEN+size+1)&0xFFu);  /* +1 alignment byte when AG > 1 */
+#endif
               if (err==(vuint8)XCP_CMD_PENDING)
               {
                 goto no_response; /* PRQA S 2001 */ /* MD_Xcp_2001 */
@@ -2547,22 +2610,45 @@ void XcpCommand( const vuint32* pCommand )
 
           case CC_SHORT_UPLOAD:
             {
+#if defined ( CPUMEM_AG_DWORD )
+              vuint8 size = CRO_SHORT_UPLOAD_SIZE * 4;
+#elif defined ( CPUMEM_AG_WORD )
+              vuint8 size = CRO_SHORT_UPLOAD_SIZE * 2;
+#else
+              vuint8 size = CRO_SHORT_UPLOAD_SIZE;
+#endif
+
+#if defined ( XCP_TI_C2000 )
+              vuint32 tmpAddr = 0;
+              tmpAddr = ((vuint32)CRO_BYTE(7) & 0xFF);
+              tmpAddr |= (((vuint32)CRO_BYTE(6) & 0xFF) << 8);
+              tmpAddr |= (((vuint32)CRO_BYTE(5) & 0xFF) << 16);
+              tmpAddr |= (((vuint32)CRO_BYTE(4) & 0xFF) << 24);
+#else
+              vuint32 tmpAddr = 0;
+              tmpAddr = CRO_SET_MTA_ADDR;
+#endif
+
 #if defined ( XCP_ENABLE_TESTMODE )
               if ( gDebugLevel != 0)
               {
-                ApplXcpPrint("-> SHORT_UPLOAD addr=%08Xh, addrext=%02Xh, size=%u\n",CRO_SHORT_UPLOAD_ADDR,CRO_SHORT_UPLOAD_EXT,CRO_SHORT_UPLOAD_SIZE);
+                ApplXcpPrint("-> SHORT_UPLOAD addr=%08Xh, addrext=%02Xh, size=%u\n", tmpAddr, CRO_SHORT_UPLOAD_EXT, size);
               }
 #endif
 
 #if defined ( XCP_ENABLE_PARAMETER_CHECK )
-              if (CRO_SHORT_UPLOAD_SIZE > (vuint8)CRM_SHORT_UPLOAD_MAX_SIZE)
+              if (size > (vuint8)CRM_SHORT_UPLOAD_MAX_SIZE)
               {
                 error(CRC_OUT_OF_RANGE) /* PRQA S 2001 */ /* MD_Xcp_2001 */
               }
 #endif
-              XcpSetMta(ApplXcpGetPointer(CRO_SHORT_UPLOAD_EXT,CRO_SHORT_UPLOAD_ADDR),CRO_SHORT_UPLOAD_EXT);
-              err = XcpReadMta(CRO_SHORT_UPLOAD_SIZE,CRM_SHORT_UPLOAD_DATA);
+              XcpSetMta(ApplXcpGetPointer(CRO_SHORT_UPLOAD_EXT,tmpAddr),CRO_SHORT_UPLOAD_EXT);
+              err = XcpReadMta(size,CRM_SHORT_UPLOAD_DATA);
+#if defined ( CPUMEM_AG_BYTE )
               xcp.CrmLen = (vuint8)((CRM_SHORT_UPLOAD_LEN+CRO_SHORT_UPLOAD_SIZE)&0xFFu);
+#else
+              xcp.CrmLen = (vuint8)((CRM_SHORT_UPLOAD_LEN+ size + 1)&0xFFu);    /* +1 alignment byte when AG > 1 */
+#endif
               if (err==(vuint8)XCP_CMD_PENDING)
               {
                 goto no_response; /* ESCAN00014775 */ /* PRQA S 2001 */ /* MD_Xcp_2001 */
@@ -2577,7 +2663,7 @@ void XcpCommand( const vuint32* pCommand )
               {
                 vuint16 i;
                 ApplXcpPrint("<- 0xFF data=");
-                for (i=0; i < (vuint16)CRO_SHORT_UPLOAD_SIZE; i++)
+                for (i=0; i < (vuint16)size; i++)
                 {
                   ApplXcpPrint("%02X ",CRM_SHORT_UPLOAD_DATA[i]);
                 }

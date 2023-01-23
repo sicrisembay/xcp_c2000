@@ -43,6 +43,16 @@ typedef signed long    vsint32;
 //#define C_CPUTYPE_BIGENDIAN  /* Motorola */
 #define C_CPUTYPE_LITTLEENDIAN /* Intel */
 
+#define XCP_TI_C2000
+
+/*
+ * Memory Address Granularity (AG)
+ * C2000 address granularity is 2 bytes
+ */
+//#define CPUMEM_AG_BYTE
+#define CPUMEM_AG_WORD
+//#define CPUMEM_AG_DWORD
+
 /* XCP message length */
 #define kXcpMaxCTO     8      /* Maximum CTO Message Lenght */
 #define kXcpMaxDTO     8      /* Maximum DTO Message Lenght */
