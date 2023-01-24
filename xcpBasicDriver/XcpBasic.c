@@ -1977,7 +1977,11 @@ void XcpCommand( const vuint32* pCommand )
         CRM_CONNECT_PROTOCOL_VERSION,
         CRM_CONNECT_TRANSPORT_VERSION,
         CRM_CONNECT_MAX_CTO_SIZE,
+#if (defined (XCP_TI_C2000) && defined(XCP_CPUTYPE_LITTLEENDIAN))
+        ((vuint16)CRM_BYTE(4) & 0xFF) | (((vuint16)CRM_BYTE(5) & 0xFF) << 8),
+#else
         CRM_CONNECT_MAX_DTO_SIZE,
+#endif
         CRM_CONNECT_RESOURCE,
         CRM_CONNECT_COMM_BASIC);
 
@@ -2509,7 +2513,7 @@ void XcpCommand( const vuint32* pCommand )
 #if defined ( XCP_ENABLE_TESTMODE )
               if ( gDebugLevel != 0)
               {
-                ApplXcpPrint("-> SET_MTA addr=%08xh, addrext=%02xh\n",tmpAddr,CRO_SET_MTA_EXT);
+                ApplXcpPrint("-> SET_MTA addr=%08lxh, addrext=%02xh\n",tmpAddr,CRO_SET_MTA_EXT);
               }
 #endif
               XcpSetMta(ApplXcpGetPointer(CRO_SET_MTA_EXT,tmpAddr),CRO_SET_MTA_EXT);
@@ -2596,11 +2600,18 @@ void XcpCommand( const vuint32* pCommand )
               if ( gDebugLevel != 0)
               {
                 vuint16 i;
-                ApplXcpPrint("DOWNLOAD_MAX data=");
+                ApplXcpPrint("-> DOWNLOAD_MAX data=");
+#if defined (CPUMEM_AG_BYTE)
                 for (i=0;i<CRO_DOWNLOAD_MAX_MAX_SIZE;i++)
                 {
                   ApplXcpPrint("%02x ",CRO_DOWNLOAD_MAX_DATA[i]);
                 }
+#else
+                for (i=0;i<(CRO_DOWNLOAD_MAX_MAX_SIZE-1);i++)  /* 1 byte for alignment when AG>1 */
+                {
+                    ApplXcpPrint("%02x ",CRO_BYTE(2+i));
+                }
+#endif
                 ApplXcpPrint("\n");
               }
   #endif
@@ -2685,7 +2696,11 @@ void XcpCommand( const vuint32* pCommand )
                 ApplXcpPrint("<- 0xFF data=");
                 for (i=0;i<size;i++) 
                 {
+#if defined ( CPUMEM_AG_BYTE )
                   ApplXcpPrint("%02x ",CRM_UPLOAD_DATA[i]);
+#else
+                  ApplXcpPrint("%02x ",CRM_BYTE(2+i));
+#endif
                 }
                 ApplXcpPrint("\n");
               }
@@ -2717,7 +2732,7 @@ void XcpCommand( const vuint32* pCommand )
 #if defined ( XCP_ENABLE_TESTMODE )
               if ( gDebugLevel != 0)
               {
-                ApplXcpPrint("-> SHORT_UPLOAD addr=%08xh, addrext=%02xh, size=%u\n", tmpAddr, CRO_SHORT_UPLOAD_EXT, size);
+                ApplXcpPrint("-> SHORT_UPLOAD addr=%08lxh, addrext=%02xh, size=%u\n", tmpAddr, CRO_SHORT_UPLOAD_EXT, size);
               }
 #endif
 
@@ -2750,7 +2765,11 @@ void XcpCommand( const vuint32* pCommand )
                 ApplXcpPrint("<- 0xFF data=");
                 for (i=0; i < (vuint16)size; i++)
                 {
+#if defined ( CPUMEM_AG_BYTE )
                   ApplXcpPrint("%02x ",CRM_SHORT_UPLOAD_DATA[i]);
+#else
+                  ApplXcpPrint("%02x ",CRM_BYTE(2+i));
+#endif
                 }
                 ApplXcpPrint("\n");
               }
