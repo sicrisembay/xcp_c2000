@@ -2,11 +2,19 @@
 #include "can/can.h"
 #include <xdc/runtime/Error.h>
 #include <xdc/runtime/Assert.h>
+#include <ti/sysbios/knl/Task.h>
 #include <ti/sysbios/knl/Mailbox.h>
 #include <ti/sysbios/BIOS.h>
-
+#include "f2833x/v142/DSP2833x_headers/include/DSP2833x_Device.h"
+#if defined(XCP_ENABLE_TESTMODE)
+#include "uart/uart.h"
+#endif
 
 static Mailbox_Handle mbxCanRx;
+
+#if defined (XCP_ENABLE_DAQ_TIMESTAMP)
+void ApplXcpTimestampInit(void);
+#endif
 
 void XcpCanInit(void)
 {
@@ -15,6 +23,14 @@ void XcpCanInit(void)
     Bool retBool = FALSE;
 
     CAN_init();
+
+#if defined(XCP_ENABLE_TESTMODE)
+    UART_init();
+#endif
+
+#if defined (XCP_ENABLE_DAQ_TIMESTAMP)
+    ApplXcpTimestampInit();
+#endif
 
     /*
      * Initialize mailbox
@@ -58,6 +74,12 @@ void ApplXcpSend(vuint8 len, MEMORY_ROM BYTEPTR msg)
     CAN_MAILBOX_ENTRY_T txCan;
     Uint16 i = 0;
 
+    if(len > sizeof(txCan.data)) {
+#if defined(XCP_ENABLE_TESTMODE)
+        System_printf("ApplXcpSend: %d exceeds max %d\n", len, sizeof(txCan.data));
+#endif
+        return;
+    }
     txCan.msgId = CONFIG_XCP_TX_CAN_ID;
     txCan.mailboxNumber = CONFIG_XCP_CAN_TX_MB;
     txCan.len = len;
@@ -86,3 +108,31 @@ MTABYTEPTR ApplXcpGetPointer( vuint8 addr_ext, vuint32 addr )
     return (MTABYTEPTR)addr;
 }
 
+#if defined (XCP_ENABLE_TESTMODE)
+void SysPutch(char ch)
+{
+    UART_send(UART_A, &ch, 1);
+}
+#endif
+
+#if defined (XCP_ENABLE_DAQ_TIMESTAMP)
+XcpDaqTimestampType ApplXcpGetTimestamp( void )
+{
+    return ((XcpDaqTimestampType)(0xFFFFFFFF - CpuTimer0Regs.TIM.all));  // CpuTimer counts down.
+}
+
+void ApplXcpTimestampInit(void)
+{
+    vuint16 prescaler = (CONFIG_SYSTEM_FREQ_MHZ - 1);
+    CpuTimer0Regs.TCR.bit.TSS = 1;
+    CpuTimer0Regs.PRD.all = 0xFFFFFFFF;
+    EALLOW;
+    CpuTimer0Regs.TPR.bit.TDDR = prescaler & 0xFF;
+    CpuTimer0Regs.TPRH.bit.TDDRH = (prescaler >> 8) & 0xFF;
+    EDIS;
+    CpuTimer0Regs.TCR.bit.TRB = 1;
+    CpuTimer0Regs.TCR.bit.SOFT = 1;
+    CpuTimer0Regs.TCR.bit.FREE = 1;
+    CpuTimer0Regs.TCR.bit.TSS = 0;
+}
+#endif

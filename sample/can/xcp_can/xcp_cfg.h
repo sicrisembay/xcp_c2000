@@ -1,19 +1,23 @@
 #ifndef XCP_CFG_H
 #define XCP_CFG_H
 
-
+#include "xdc/runtime/System.h"
 /*----------------------------------------------------------------------------*/
 /* Test */
 /* Use XCP_PRINT to generate diagnostic messages */
 
-#define XCP_DISABLE_TESTMODE
+//#define XCP_DISABLE_TESTMODE
+#define XCP_ENABLE_TESTMODE
+
 #ifdef XCP_ENABLE_TESTMODE
   /* Enable xcpPutchar */
+  extern void XcpPutch(char ch);
   #define XCP_ENABLE_SERV_TEXT
   #define XCP_ENABLE_SERV_TEXT_PUTCHAR
-  #define ApplXcpSendStall() 0
-  #define ApplXcpPrint cprintf
-  #define XCP_ASSERT(x) if (!(x)) cprintf("Assertion failed");
+//  #define ApplXcpSendStall() 0
+  #define ApplXcpPrint(x, ...)  System_printf(x, ##__VA_ARGS__)
+  #define XCP_PRINT(x, ...)     System_printf(x, ##__VA_ARGS__)
+  #define XCP_ASSERT(x);
 #else
   #define XCP_PRINT(x)
   #define XCP_ASSERT(x)
@@ -38,6 +42,7 @@ typedef signed long    vsint32;
 
 /*----------------------------------------------------------------------------*/
 /* XCP protocol parameters */
+#define XCP_ENABLE_USE_BYTE_ACCESS
 
 /* Byte order */
 //#define C_CPUTYPE_BIGENDIAN  /* Motorola */
@@ -58,7 +63,8 @@ typedef signed long    vsint32;
 #define kXcpMaxDTO     8      /* Maximum DTO Message Lenght */
 
 /* Enable/Disable parameter checking (save memory) */
-#define XCP_DISABLE_PARAMETER_CHECK
+//#define XCP_DISABLE_PARAMETER_CHECK
+#define XCP_ENABLE_PARAMETER_CHECK
 
 /* Enable COMM_MODE_INFO */
 #define XCP_ENABLE_COMM_MODE_INFO
@@ -150,6 +156,12 @@ typedef signed long    vsint32;
 #define XCP_DISABLE_DAQ_HDR_ODT_DAQ
 
 /* Enable DAQ Timestamps */
-#define XCP_DISABLE_DAQ_TIMESTAMP
+//#define XCP_DISABLE_DAQ_TIMESTAMP
+#define XCP_ENABLE_DAQ_TIMESTAMP
+#define kXcpDaqTimestampSize            DAQ_TIMESTAMP_DWORD
+#define kXcpDaqTimestampUnit            DAQ_TIMESTAMP_UNIT_1US
+#define kXcpDaqTimestampTicksPerUnit    1   // Timer0 is pre-scaled to 1us tick
+
+#define XCP_ENABLE_NO_P2INT_CAST
 
 #endif /* XCP_CFG_H */

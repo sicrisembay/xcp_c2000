@@ -14,6 +14,7 @@
 /*
  * UART Driver Configuration
  */
+#define CONFIG_USE_UART                 1
 #define CONFIG_ENABLE_UARTA             1
 #if CONFIG_ENABLE_UARTA
 #define CONFIG_BAUDRATE_UARTA           115200
