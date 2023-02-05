@@ -1,1 +1,1 @@
-# XCP demo on C2000 UART
+# XCP demo on C2000 CAN
