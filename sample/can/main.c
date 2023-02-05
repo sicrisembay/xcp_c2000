@@ -12,40 +12,92 @@
 #include "f2833x/v142/DSP2833x_headers/include/DSP2833x_Device.h"
 #include "XcpBasic.h"
 #include "driver_def.h"
+#include <math.h>
 
 
 /*
  *  ======== taskFxn ========
  */
+
+#define PI                   3.14159265
+#define TWO_PI               2.0f * PI
+#define PHASEB               TWO_PI / 3.0f
+#define PHASEC               4.0f * PI / 3.0f
+
+float waveformA;
+float waveformB;
+float waveformC;
+float amplitudeA;
+float amplitudeB;
+float amplitudeC;
+float freq;
+
+
 Void taskFxn(UArg a0, UArg a1)
 {
+    float t = 0.0;
     extern void XcpHandler(void);
     uint16_t prescaler_10ms = 0;
     uint16_t prescaler_100ms = 0;
+    uint16_t blink_counter = 0;
+    amplitudeA = 1.0f;
+    amplitudeB = 1.0f;
+    amplitudeC = 1.0f;
+    freq = 1.0f;  // 1Hz
+
+    waveformA = amplitudeA * sin(TWO_PI * freq * t);
+    waveformB = amplitudeB * sin((TWO_PI * freq * t) + PHASEB);
+    waveformC = amplitudeA * sin((TWO_PI * freq * t) + PHASEC);
+
+    extern void XcpCanInit(void);
 
     XcpCanInit();
 
     XcpInit();
 
+    EALLOW;
+    GpioCtrlRegs.GPBMUX1.bit.GPIO34 = 0;
+    GpioCtrlRegs.GPBDIR.bit.GPIO34 = 1;
+    GpioCtrlRegs.GPBPUD.bit.GPIO34 = 1;
+    EDIS;
+    GpioDataRegs.GPBSET.bit.GPIO34 = 1; // LED off
+
+    System_printf("running taskFxn()\n");
+
     while(1) {
         /* XcpHandler at 1ms interval */
         Task_sleep(1);
+        t += 0.0001;
+
+        waveformA = amplitudeA * sin(TWO_PI * freq * t);
+        waveformB = amplitudeB * sin((TWO_PI * freq * t) + PHASEB);
+        waveformC = amplitudeC * sin((TWO_PI * freq * t) + PHASEC);
+
         XcpHandler();
 
-//        prescaler_10ms++;
-//        prescaler_100ms++;
-//
-//        if(prescaler_10ms >= 10) {
-//            /* 10ms event */
-//            XcpEvent(1);
-//            prescaler_10ms = 0;
-//        }
-//
-//        if(prescaler_100ms >= 100) {
-//            /* 100ms event */
-//            XcpEvent(2);
-//            prescaler_100ms = 0;
-//        }
+        prescaler_10ms++;
+        prescaler_100ms++;
+        blink_counter++;
+
+        if(prescaler_10ms >= 10) {
+            /* 10ms event */
+            XcpEvent(1);
+            prescaler_10ms = 0;
+        }
+
+        if(prescaler_100ms >= 100) {
+            /* 100ms event */
+            XcpEvent(2);
+            prescaler_100ms = 0;
+        }
+
+        if(blink_counter < 200) {
+            GpioDataRegs.GPBCLEAR.bit.GPIO34 = 1;
+        } else if(blink_counter < 2000) {
+            GpioDataRegs.GPBSET.bit.GPIO34 = 1;
+        } else {
+            blink_counter = 0;
+        }
     }
 }
 
