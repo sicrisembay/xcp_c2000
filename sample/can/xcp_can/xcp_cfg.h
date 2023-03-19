@@ -162,6 +162,11 @@ typedef signed long    vsint32;
 #define kXcpDaqTimestampUnit            DAQ_TIMESTAMP_UNIT_1US
 #define kXcpDaqTimestampTicksPerUnit    1   // Timer0 is pre-scaled to 1us tick
 
+/* Enable */
+//#define XCP_DISABLE_DAQ_EVENT_INFO
+#define XCP_ENABLE_DAQ_EVENT_INFO
+#define kXcpMaxEvent                    2
+
 #define XCP_ENABLE_NO_P2INT_CAST
 
 #endif /* XCP_CFG_H */

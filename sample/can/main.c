@@ -31,11 +31,12 @@ float amplitudeA;
 float amplitudeB;
 float amplitudeC;
 float freq;
-
+UInt16 testTick;
 
 Void taskFxn(UArg a0, UArg a1)
 {
     float t = 0.0;
+    float period = 1.0f;
     extern void XcpHandler(void);
     uint16_t prescaler_10ms = 0;
     uint16_t prescaler_100ms = 0;
@@ -44,6 +45,7 @@ Void taskFxn(UArg a0, UArg a1)
     amplitudeB = 1.0f;
     amplitudeC = 1.0f;
     freq = 1.0f;  // 1Hz
+    testTick = 0;
 
     waveformA = amplitudeA * sin(TWO_PI * freq * t);
     waveformB = amplitudeB * sin((TWO_PI * freq * t) + PHASEB);
@@ -67,7 +69,13 @@ Void taskFxn(UArg a0, UArg a1)
     while(1) {
         /* XcpHandler at 1ms interval */
         Task_sleep(1);
-        t += 0.0001;
+        if(freq != 0.0f) {
+            period = 1/freq;
+        }
+        t += 0.001;
+        while(t > period) {
+            t = t - period;
+        }
 
         waveformA = amplitudeA * sin(TWO_PI * freq * t);
         waveformB = amplitudeB * sin((TWO_PI * freq * t) + PHASEB);
@@ -81,13 +89,14 @@ Void taskFxn(UArg a0, UArg a1)
 
         if(prescaler_10ms >= 10) {
             /* 10ms event */
-            XcpEvent(1);
+            XcpEvent(XCP_EVENT_10MS);
             prescaler_10ms = 0;
+            testTick++;
         }
 
         if(prescaler_100ms >= 100) {
             /* 100ms event */
-            XcpEvent(2);
+            XcpEvent(XCP_EVENT_100MS);
             prescaler_100ms = 0;
         }
 

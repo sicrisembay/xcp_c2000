@@ -18,7 +18,7 @@
 #define CONFIG_ENABLE_UARTA             1
 #if CONFIG_ENABLE_UARTA
 #define CONFIG_BAUDRATE_UARTA           115200
-#define CONFIG_TX_QUEUE_BUFF_SZ_UARTA   256
+#define CONFIG_TX_QUEUE_BUFF_SZ_UARTA   1024
 #define CONFIG_RX_QUEUE_BUFF_SZ_UARTA   128
 #endif
 
@@ -42,11 +42,18 @@
 #define CONFIG_USE_CAN                  1
 #define CONFIG_ENABLE_CAN_A             1
 #if CONFIG_ENABLE_CAN_A
-#define CONFIG_CAN_A_BPS_250KHZ         1
+#define CONFIG_CAN_A_BPS_250KHZ         0
+#define CONFIG_CAN_A_BPS_1MHZ           1
 #define CONFIG_CAN_A_DBO_LSB            1
+#if CONFIG_CAN_A_BPS_1MHZ
+#define CONFIG_CAN_A_BRP                4
+#define CONFIG_CAN_A_TSEG1              10  /* Fclk 150MHz */
+#define CONFIG_CAN_A_TSEG2              2   /* Fclk 150MHz */
+#elif CONFIG_CAN_A_BPS_250KHZ
 #define CONFIG_CAN_A_BRP                19
 #define CONFIG_CAN_A_TSEG1              10  /* Fclk 150MHz */
 #define CONFIG_CAN_A_TSEG2              2   /* Fclk 150MHz */
+#endif
 #define CONFIG_CAN_A_TX_GPIO31          1
 #define CONFIG_CAN_A_RX_GPIO30          1
 #endif
