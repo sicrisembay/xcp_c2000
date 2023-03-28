@@ -37,9 +37,6 @@ Void taskFxn(UArg a0, UArg a1)
 {
     float t = 0.0;
     float period = 1.0f;
-    extern void XcpHandler(void);
-    uint16_t prescaler_10ms = 0;
-    uint16_t prescaler_100ms = 0;
     uint16_t blink_counter = 0;
     amplitudeA = 1.0f;
     amplitudeB = 1.0f;
@@ -52,10 +49,7 @@ Void taskFxn(UArg a0, UArg a1)
     waveformC = amplitudeA * sin((TWO_PI * freq * t) + PHASEC);
 
     extern void XcpCanInit(void);
-
     XcpCanInit();
-
-    XcpInit();
 
     EALLOW;
     GpioCtrlRegs.GPBMUX1.bit.GPIO34 = 0;
@@ -81,24 +75,8 @@ Void taskFxn(UArg a0, UArg a1)
         waveformB = amplitudeB * sin((TWO_PI * freq * t) + PHASEB);
         waveformC = amplitudeC * sin((TWO_PI * freq * t) + PHASEC);
 
-        XcpHandler();
-
-        prescaler_10ms++;
-        prescaler_100ms++;
         blink_counter++;
-
-        if(prescaler_10ms >= 10) {
-            /* 10ms event */
-            XcpEvent(XCP_EVENT_10MS);
-            prescaler_10ms = 0;
-            testTick++;
-        }
-
-        if(prescaler_100ms >= 100) {
-            /* 100ms event */
-            XcpEvent(XCP_EVENT_100MS);
-            prescaler_100ms = 0;
-        }
+        testTick++;
 
         if(blink_counter < 200) {
             GpioDataRegs.GPBCLEAR.bit.GPIO34 = 1;

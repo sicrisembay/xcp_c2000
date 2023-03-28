@@ -6,6 +6,9 @@
 /*
  * XCP CAN
  */
+#define CONFIG_XCP_TASK_PRIORITY        1
+#define CONFIG_XCP_TASK_STACK           512
+#define CONFIG_XCP_PROC_INTERVAL_MS     10
 #define CONFIG_XCP_TX_CAN_ID            0x554
 #define CONFIG_XCP_RX_CAN_ID            0x555
 #define CONFIG_XCP_CAN_TX_MB            0

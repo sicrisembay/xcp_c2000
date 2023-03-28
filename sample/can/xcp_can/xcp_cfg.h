@@ -158,8 +158,8 @@ typedef signed long    vsint32;
 /* Enable DAQ Timestamps */
 //#define XCP_DISABLE_DAQ_TIMESTAMP
 #define XCP_ENABLE_DAQ_TIMESTAMP
-#define kXcpDaqTimestampSize            DAQ_TIMESTAMP_DWORD
-#define kXcpDaqTimestampUnit            DAQ_TIMESTAMP_UNIT_1US
+#define kXcpDaqTimestampSize            DAQ_TIMESTAMP_WORD
+#define kXcpDaqTimestampUnit            DAQ_TIMESTAMP_UNIT_1MS
 #define kXcpDaqTimestampTicksPerUnit    1   // Timer0 is pre-scaled to 1us tick
 
 /* Enable */

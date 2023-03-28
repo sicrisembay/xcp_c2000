@@ -1,16 +1,32 @@
 #include "XcpBasic.h"
 #include "can/can.h"
+#include <xdc/std.h>
 #include <xdc/runtime/Error.h>
 #include <xdc/runtime/Assert.h>
+#include <xdc/runtime/Types.h>
 #include <ti/sysbios/knl/Task.h>
+#include <ti/sysbios/knl/Event.h>
 #include <ti/sysbios/knl/Mailbox.h>
+#include <ti/sysbios/knl/Clock.h>
 #include <ti/sysbios/BIOS.h>
 #include "f2833x/v142/DSP2833x_headers/include/DSP2833x_Device.h"
 #if defined(XCP_ENABLE_TESTMODE)
 #include "uart/uart.h"
 #endif
 
-static Mailbox_Handle mbxCanRx;
+#define XCP_EVENT_PROCESS               (Event_Id_00)
+#define XCP_EVENT_TX_DONE               (Event_Id_01)
+#define XCP_EVENT_RX_PENDING            (Event_Id_02)
+
+static Bool bInitDone = FALSE;
+static Task_Handle xcpTaskHandle = NULL;
+static Event_Handle xcp_event = NULL;
+static Clock_Handle xcpClkHandle = NULL;
+static Mailbox_Handle mbxCanRx = NULL;
+static Mailbox_Handle mbxCanTx = NULL;
+
+static void XcpTaskFxn(UArg a0, UArg a1);
+static void XcpClkFxn(UArg a);
 
 #if defined (XCP_ENABLE_DAQ_TIMESTAMP)
 void ApplXcpTimestampInit(void);
@@ -20,49 +36,73 @@ void XcpCanInit(void)
 {
     Error_Block eb;
     Mailbox_Params mbxParam;
+    Task_Params tskParam;
+    Clock_Params clkParam;
     Bool retBool = FALSE;
 
-    CAN_init();
+    if(!bInitDone) {
+        CAN_init();
 
-#if defined(XCP_ENABLE_TESTMODE)
-    UART_init();
-#endif
+    #if defined(XCP_ENABLE_TESTMODE)
+        UART_init();
+    #endif
 
-#if defined (XCP_ENABLE_DAQ_TIMESTAMP)
-    ApplXcpTimestampInit();
-#endif
+    #if defined (XCP_ENABLE_DAQ_TIMESTAMP)
+        ApplXcpTimestampInit();
+    #endif
 
-    /*
-     * Initialize mailbox
-     * This receives packets from underlying CAN peripheral
-     */
-    Mailbox_Params_init(&mbxParam);
-    mbxCanRx = Mailbox_create(sizeof(CAN_MAILBOX_ENTRY_T), 16, &mbxParam, &eb);
-    Assert_isTrue((Error_check(&eb) == FALSE) && (mbxCanRx != NULL), NULL);
-    /*
-     * Configure underlying CAN mailbox
-     */
-    /* Transmit */
-    retBool = CAN_tx_config(CAN_A, CONFIG_XCP_CAN_TX_MB, 16);
-    Assert_isTrue(retBool, NULL);
-    /* Receive */
-    retBool = CAN_rx_config(CAN_A, CONFIG_XCP_CAN_RX_MB, CONFIG_XCP_RX_CAN_ID, 0xF800, FALSE, mbxCanRx);
-    Assert_isTrue(retBool, NULL);
-}
+        Error_init(&eb);
+        /*
+         * Event
+         */
+        xcp_event = Event_create(NULL, &eb);
+        Assert_isTrue((Error_check(&eb) == FALSE) && (xcp_event != NULL), NULL);
+        /*
+         * Initialize mailbox
+         * This receives packets from underlying CAN peripheral
+         */
+        Mailbox_Params_init(&mbxParam);
+        mbxParam.readerEvent = xcp_event;
+        mbxParam.readerEventId = XCP_EVENT_RX_PENDING;
+        mbxCanRx = Mailbox_create(sizeof(CAN_MAILBOX_ENTRY_T), 16, &mbxParam, &eb);
+        Assert_isTrue((Error_check(&eb) == FALSE) && (mbxCanRx != NULL), NULL);
+        /* This mailbox is for Tx done notification */
+        Mailbox_Params_init(&mbxParam);
+        mbxParam.readerEvent = xcp_event;
+        mbxParam.readerEventId = XCP_EVENT_TX_DONE;
+        mbxCanTx = Mailbox_create(sizeof(CAN_MAILBOX_ENTRY_T), 2, &mbxParam, &eb);
+        Assert_isTrue((Error_check(&eb) == FALSE) && (mbxCanTx != NULL), NULL);
+        /*
+         * Configure underlying CAN mailbox
+         */
+        /* Transmit */
+        retBool = CAN_tx_config(CAN_A, CONFIG_XCP_CAN_TX_MB, 16);
+        Assert_isTrue(retBool, NULL);
+        retBool = CAN_mailbox_register(CAN_A, CONFIG_XCP_CAN_TX_MB, mbxCanTx);
+        Assert_isTrue(retBool, NULL);
+        /* Receive */
+        retBool = CAN_rx_config(CAN_A, CONFIG_XCP_CAN_RX_MB, CONFIG_XCP_RX_CAN_ID, 0xF800, FALSE, mbxCanRx);
+        Assert_isTrue(retBool, NULL);
 
+        /*
+         * Periodic Clock
+         */
+        Clock_Params_init(&clkParam);
+        clkParam.period = CONFIG_XCP_PROC_INTERVAL_MS;
+        clkParam.startFlag = FALSE;
+        xcpClkHandle = Clock_create(XcpClkFxn, CONFIG_XCP_PROC_INTERVAL_MS, &clkParam, &eb);
+        Assert_isTrue((Error_check(&eb) == FALSE) && (xcpClkHandle != NULL), NULL);
 
-void XcpHandler(void)
-{
-    CAN_MAILBOX_ENTRY_T rxCan;
+        /*
+         * Task
+         */
+        Task_Params_init(&tskParam);
+        tskParam.priority = CONFIG_XCP_TASK_PRIORITY;
+        tskParam.stackSize = CONFIG_XCP_TASK_STACK;
+        xcpTaskHandle = Task_create(XcpTaskFxn, &tskParam, &eb);
+        Assert_isTrue((Error_check(&eb) == FALSE) && (xcpTaskHandle != NULL), NULL);
 
-    /* Check if the transmit has been done */
-    if(CAN_send_done(CAN_A, CONFIG_XCP_CAN_TX_MB)) {
-        XcpSendCallBack();
-    }
-
-    /* Handle Receive CAN */
-    while(Mailbox_pend(mbxCanRx, &rxCan, BIOS_NO_WAIT)) {
-        XcpCommand((void *)(rxCan.data));
+        bInitDone = TRUE;
     }
 }
 
@@ -116,23 +156,65 @@ void SysPutch(char ch)
 #endif
 
 #if defined (XCP_ENABLE_DAQ_TIMESTAMP)
+
 XcpDaqTimestampType ApplXcpGetTimestamp( void )
 {
-    return ((XcpDaqTimestampType)(0xFFFFFFFF - CpuTimer0Regs.TIM.all));  // CpuTimer counts down.
+    return ((XcpDaqTimestampType)Clock_getTicks());
 }
 
 void ApplXcpTimestampInit(void)
 {
-    vuint16 prescaler = (CONFIG_SYSTEM_FREQ_MHZ - 1);
-    CpuTimer0Regs.TCR.bit.TSS = 1;
-    CpuTimer0Regs.PRD.all = 0xFFFFFFFF;
-    EALLOW;
-    CpuTimer0Regs.TPR.bit.TDDR = prescaler & 0xFF;
-    CpuTimer0Regs.TPRH.bit.TDDRH = (prescaler >> 8) & 0xFF;
-    EDIS;
-    CpuTimer0Regs.TCR.bit.TRB = 1;
-    CpuTimer0Regs.TCR.bit.SOFT = 1;
-    CpuTimer0Regs.TCR.bit.FREE = 1;
-    CpuTimer0Regs.TCR.bit.TSS = 0;
+    // Do nothing as it uses the SysBIOS CLOCK tick
 }
-#endif
+
+#endif /* XCP_ENABLE_DAQ_TIMESTAMP */
+
+
+static void XcpTaskFxn(UArg a0, UArg a1)
+{
+    UInt posted = 0;
+    UInt16 event_prescaler = 0;
+    CAN_MAILBOX_ENTRY_T canMsg;
+
+    XcpInit();
+
+    Clock_start(xcpClkHandle);
+
+    while(1) {
+        posted = Event_pend(xcp_event, 0,
+                    (XCP_EVENT_PROCESS | XCP_EVENT_TX_DONE | XCP_EVENT_RX_PENDING),
+                    BIOS_WAIT_FOREVER);
+
+        if(posted & XCP_EVENT_PROCESS) {
+            /* 10ms event */
+            XcpEvent(XCP_EVENT_10MS);
+            event_prescaler++;
+            if(event_prescaler >= 10) {
+                event_prescaler = 0;
+                XcpEvent(XCP_EVENT_100MS);
+            }
+        }
+
+        if(posted & XCP_EVENT_TX_DONE) {
+            while(Mailbox_pend(mbxCanTx, &canMsg, BIOS_NO_WAIT)) {
+                if(canMsg.evtId == CAN_MAILBOX_TRANSMIT_DONE_EVT) {
+                    XcpSendCallBack();
+                }
+            }
+        }
+
+        if(posted & XCP_EVENT_RX_PENDING) {
+            while(Mailbox_pend(mbxCanRx, &canMsg, BIOS_NO_WAIT)) {
+                if(canMsg.evtId == CAN_MAILBOX_RECEIVE_EVT) {
+                    XcpCommand((void *)(canMsg.data));
+                }
+            }
+        }
+    }
+}
+
+
+static void XcpClkFxn(UArg a)
+{
+    Event_post(xcp_event, XCP_EVENT_PROCESS);
+}
